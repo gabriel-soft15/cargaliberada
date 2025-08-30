@@ -8,25 +8,38 @@ class Telalogin extends StatefulWidget {
 }
 
 class _TelaloginState extends State<Telalogin> {
+  bool _obscurePassword = true;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 231, 227, 227),
+      backgroundColor: const Color.fromARGB(255, 254, 252, 252),
 
-      body: Center(
+      body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Image.asset('lib/img/logocargaliberada.png', height: 250),
+              // Ajuste esse valor conforme desejar
+              Padding(
+                padding: const EdgeInsets.only(top: 32.0, bottom: 24.0),
+                child: Center(
+                  child: Image.asset(
+                    'lib/img/logocargaliberada.png',
+                    height: 300, // Tamanho menor, mais comum em apps
+                  ),
+                ),
+              ),
 
               Container(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(12.0),
                 decoration: BoxDecoration(
                   color: const Color.fromARGB(250, 255, 255, 255),
                   borderRadius: BorderRadius.circular(16.0),
+                  border: Border.all(
+                    color: Color.fromARGB(66, 3, 19, 118), // Cor da borda
+                    width: 1.0, // Espessura da borda
+                  ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -46,31 +59,52 @@ class _TelaloginState extends State<Telalogin> {
                     SizedBox(height: 18),
 
                     TextFormField(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Senha',
-                        border: OutlineInputBorder(),
-                        focusedBorder: OutlineInputBorder(
+                        border: const OutlineInputBorder(),
+                        focusedBorder: const OutlineInputBorder(
                           borderSide: BorderSide(
                             color: Color.fromARGB(66, 2, 26, 179),
                           ),
                         ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
                       ),
-                      keyboardType: TextInputType.emailAddress,
+                      obscureText: _obscurePassword,
+                      keyboardType: TextInputType.text,
                     ),
                     SizedBox(height: 16),
                     SizedBox(
+                      width: double.infinity,
+                      height: 48,
                       child: ElevatedButton(
                         onPressed: () {},
-
-                        child: const Text('Entrar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color.fromARGB(
+                            255,
+                            2,
+                            26,
+                            179,
+                          ), // Cor do botão
+                          foregroundColor: Colors.white, // Cor do texto
+                        ),
+                        child: const Text('Login'),
                       ),
                     ),
                     SizedBox(height: 16),
-                    SizedBox(
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        child: const Text('Cadastro'),
-                      ),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text('Não tem uma conta? Cadastre-se'),
                     ),
                   ],
                 ),

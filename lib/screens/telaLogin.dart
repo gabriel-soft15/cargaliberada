@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Telalogin extends StatefulWidget {
   const Telalogin({super.key});
@@ -9,36 +10,52 @@ class Telalogin extends StatefulWidget {
 
 class _TelaloginState extends State<Telalogin> {
   bool _obscurePassword = true;
+  bool _jaCadastrado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarCadastro();
+  }
+
+  Future<void> _verificarCadastro() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _jaCadastrado = prefs.getBool('jaCadastrado') ?? false;
+    });
+  }
+
+  Future<void> _salvarCadastro() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('jaCadastrado', true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 254, 252, 252),
-
+      backgroundColor: const Color.fromARGB(255, 1, 41, 88),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Ajuste esse valor conforme desejar
               Padding(
-                padding: const EdgeInsets.only(top: 32.0, bottom: 24.0),
-                child: Center(
-                  child: Image.asset(
-                    'lib/img/logocargaliberada.png',
-                    height: 300, // Tamanho menor, mais comum em apps
-                  ),
+                padding: const EdgeInsets.only(top: 10.0, bottom: 0.0),
+                child: Image.asset(
+                  'lib/img/logogeral.png',
+                  height: 350,
+                  fit: BoxFit.contain,
                 ),
               ),
-
               Container(
                 padding: const EdgeInsets.all(12.0),
                 decoration: BoxDecoration(
                   color: const Color.fromARGB(250, 255, 255, 255),
                   borderRadius: BorderRadius.circular(16.0),
                   border: Border.all(
-                    color: Color.fromARGB(66, 3, 19, 118), // Cor da borda
-                    width: 1.0, // Espessura da borda
+                    color: Color.fromARGB(66, 3, 19, 118),
+                    width: 1.0,
                   ),
                 ),
                 child: Column(
@@ -46,7 +63,7 @@ class _TelaloginState extends State<Telalogin> {
                   children: [
                     TextFormField(
                       decoration: const InputDecoration(
-                        labelText: 'Email',
+                        labelText: 'Usuário',
                         border: OutlineInputBorder(),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(
@@ -57,7 +74,6 @@ class _TelaloginState extends State<Telalogin> {
                       keyboardType: TextInputType.emailAddress,
                     ),
                     SizedBox(height: 18),
-
                     TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Senha',
@@ -90,22 +106,30 @@ class _TelaloginState extends State<Telalogin> {
                       child: ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color.fromARGB(
-                            255,
-                            2,
-                            26,
-                            179,
-                          ), // Cor do botão
-                          foregroundColor: Colors.white, // Cor do texto
+                          backgroundColor: const Color.fromARGB(255, 1, 41, 88),
+                          foregroundColor: Colors.white,
                         ),
                         child: const Text('Login'),
                       ),
                     ),
                     SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text('Não tem uma conta? Cadastre-se'),
-                    ),
+                    // Só mostra o botão se ainda não cadastrou
+                    if (!_jaCadastrado)
+                      TextButton(
+                        onPressed: () async {
+                          final resultado = await Navigator.pushNamed(
+                            context,
+                            '/telaCadastro',
+                          );
+                          if (resultado == true) {
+                            await _salvarCadastro();
+                            setState(() {
+                              _jaCadastrado = true;
+                            });
+                          }
+                        },
+                        child: const Text('Primeiro acesso? Clique aqui'),
+                      ),
                   ],
                 ),
               ),
@@ -113,6 +137,6 @@ class _TelaloginState extends State<Telalogin> {
           ),
         ),
       ),
-    ); //
+    );
   }
 }

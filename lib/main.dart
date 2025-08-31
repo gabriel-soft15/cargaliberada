@@ -1,3 +1,4 @@
+import 'package:cargaliberada/screens/telaCadastro.dart';
 import 'package:cargaliberada/screens/telaLogin.dart';
 import 'package:flutter/material.dart';
 
@@ -32,6 +33,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: Telalogin(),
+      routes: {
+        '/telaCadastro': (context) => Telacadastro(), // Adicione esta linha
+      },
     );
   }
 }

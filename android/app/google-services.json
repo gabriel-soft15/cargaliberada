@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "168255024061",
+    "project_id": "cargaliberada-edab3",
+    "storage_bucket": "cargaliberada-edab3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168255024061:android:65489cc8bafd1eefed80d4",
+        "android_client_info": {
+          "package_name": "com.example.cargaliberada"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "168255024061-qgd2b3paesvt7ukqh4r4sm8flp63f8uv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqoxo2ImJTS9pdEdPfPVzZHdt6QDBcwr4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "168255024061-qgd2b3paesvt7ukqh4r4sm8flp63f8uv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

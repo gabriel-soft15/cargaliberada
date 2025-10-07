@@ -1,88 +1,80 @@
-import 'package:exportasystem/screens/loginScreen.dart';
+import 'package:cargaliberada/database/databaseHelper.dart';
+import 'package:cargaliberada/models/userModel.dart';
+import 'package:cargaliberada/screens/loginScreen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
+import 'package:sqflite/sqflite.dart';
 
-class Authrepository extends GetxController {
-  static Authrepository instance = Get.find();
+class UserRepository {
+  final _col = FirebaseFirestore.instance.collection('users');
+  Future<Database> get _db async => DatabaseHelper.instance.database;
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  late final Rx<User?> _firebaseUser;
-  var vereficatenId = ''.obs;
-
-  User? get firebaseUser => _firebaseUser.value;
-
-  @override
-  void onReady() {
-    super.onReady();
-    _firebaseUser = Rx<User?>(_auth.currentUser);
-    _firebaseUser.bindStream(_auth.userChanges());
-    setInitialScreen(_firebaseUser.value);
+  // ---------- FIRESTORE ----------
+  Future<void> upsertFirestore(UserModel u) async {
+    await _col.doc(u.firebaseUid).set(u.toFirestore(), SetOptions(merge: true));
   }
 
-  void setInitialScreen(User? user) {
-    if (user == null) {
-      Get.offAll(() => const HomeScreen());
-    } else if (user.emailVerified) {
-      Get.offAll(() => const ProfileScreen());
+  Future<UserModel?> getFromFirestore(String uid) async {
+    final snap = await _col.doc(uid).get();
+    if (!snap.exists || snap.data() == null) return null;
+    return UserModel.fromFirestore(uid, snap.data()!);
+  }
+
+  // ---------- SQLITE ----------
+  Future<UserModel?> findByFirebaseUid(String uid) async {
+    final db = await _db;
+    final res = await db.query(
+      'users',
+      where: 'firebaseUid = ?',
+      whereArgs: [uid],
+      limit: 1,
+    );
+    if (res.isEmpty) return null;
+    return UserModel.fromMap(res.first);
+  }
+
+  Future<UserModel> upsertLocal(UserModel u) async {
+    final db = await _db;
+    final existing = await db.query(
+      'users',
+      where: 'firebaseUid = ?',
+      whereArgs: [u.firebaseUid],
+      limit: 1,
+    );
+    if (existing.isEmpty) {
+      final id = await db.insert('users', u.toMap());
+      return u.copyWith(id: id);
     } else {
-      Get.offAll(() => const ProfileScreen());
-    }
-  }
-  //---------------------------Celular------------------------------------//
-
-  //------------------------Email e Senha------------------------------//
-
-  Future<void> createUserWithEmailAndPassword(
-    String email,
-    String password,
-  ) async {
-    try {
-      await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      await db.update(
+        'users',
+        u.toMap(),
+        where: 'firebaseUid = ?',
+        whereArgs: [u.firebaseUid],
       );
-      _firebaseUser.value != null
-          ? Get.offAll(() => const HomeScreen())
-          : Get.offAll(() => const LoginScreen());
-    } on FirebaseAuthException catch (e) {
-      final ex = SingUpFailure.code(e.code);
-      print("Firebase Auth Exception - ${ex.message}");
-      throw ex;
-    } catch (_) {
-      const ex = SingUpFailure();
-      print("Exeption - ${ex.message}");
-      throw ex;
+      return u.copyWith(id: existing.first['id'] as int?);
     }
   }
 
-  Future<String?> loginWithEmailAndPassword(
-    String email,
-    String password,
-  ) async {
-    try {
-      await _auth.loginWithEmailAndPassword(email: email, password: password);
-      return null;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        print("Usuarios não encontrado para o email: $email");
-        return "Email não cadastrada";
-      } else if (e.code == 'wrong-password') {
-        print('Senha incoreta para o email: $email');
-        return 'Senha incorreta.';
-      } else if (e.code == 'invalid-email') {
-        print('email inválido: $email');
-        return 'formato e email inválido';
-      } else if (e.code == 'network-request-failed') {
-        print('falha de rede ao tentar logar: $email');
-        return 'falha de conexão. Verifique sua internet';
-      } else {
-        print('erro não tratado: ${e.message}');
-        return 'ocorreu um erro durante o login. Por favor, tente novamente mais tarde';
-      }
-    } catch (e) {
-      print('erro ineperado: $e');
-      return 'Ocorreu um erro inesperado durante o login';
-    }
+  // ---------- SYNC ----------
+  /// Garante o usuário em ambos os lados e retorna o modelo consolidado local.
+  Future<UserModel> syncUser(UserModel base) async {
+    // Prioridade: Firestore como fonte de verdade para perfil/role/classId
+    final remote = await getFromFirestore(base.firebaseUid);
+    final merged = (remote == null)
+        ? base
+        : base.copyWith(
+            name: remote.name,
+            email: remote.email,
+            avatarUrl: remote.avatarUrl,
+            isGoogleUser: remote.isGoogleUser,
+            role: remote.role,
+            classId: remote.classId,
+          );
+
+    await upsertFirestore(merged); // garante no remoto (merge)
+    final local = await upsertLocal(merged); // garante no local
+    return local;
   }
 }

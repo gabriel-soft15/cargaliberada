@@ -1,5 +1,6 @@
 import 'package:cargaliberada/models/userModel.dart';
 import 'package:cargaliberada/repository/authRepository.dart';
+import 'package:cargaliberada/screens/homeScreen.dart';
 import 'package:cargaliberada/screens/loginScreen.dart';
 import 'package:cargaliberada/services/authService.dart';
 import 'package:cargaliberada/services/sessionService.dart';
@@ -9,14 +10,12 @@ import 'package:flutter/material.dart';
 
 class AuthController extends GetxController {
   final AuthService _auth = AuthService();
-  final UserRepository _repo = UserRepository();
+  final AuthRepository _repo = AuthRepository();
   final SessionService _session = SessionService();
 
-  // Estado UI
   final isLoading = false.obs;
   final errorMessage = RxnString();
 
-  // Caso queira usar no formulário dessa tela:
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -25,13 +24,9 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Opcional: monitorar mudanças do Firebase
-    _auth.userChanges.listen((u) async {
-      // evita navegação agressiva; usaremos métodos explícitos
-    });
+    _auth.userChanges.listen((u) async {});
   }
 
-  // ---------- LOGIN / CADASTRO ----------
   Future<void> loginEmail(String email, String password) async {
     await _run(() async {
       final u = await _auth.signInWithEmail(email, password);
@@ -50,12 +45,12 @@ class AuthController extends GetxController {
     });
   }
 
-  /*  Future<void> loginGoogle() async {
+  Future<void> loginGoogle() async {
     await _run(() async {
       final u = await _auth.signInWithGoogle();
       await _afterFirebaseLogin(u, loginProviderIsGoogle: true);
     });
-  } */
+  }
 
   Future<void> logout() async {
     await _run(() async {
@@ -66,7 +61,6 @@ class AuthController extends GetxController {
     }, showErrors: false);
   }
 
-  // ---------- SESSÃO ----------
   Future<bool> tryRestoreSession() async {
     final s = await _session.load();
     if (s == null) return false;
@@ -74,25 +68,18 @@ class AuthController extends GetxController {
     return true;
   }
 
-  // ---------- PERMISSÕES ----------
   bool get canAccessTeacherArea =>
       current?.role == UserRole.teacher || current?.role == UserRole.admin;
   bool get isStudent => current?.role == UserRole.student;
 
-  // ---------- PRIVATE ----------
   Future<void> _afterFirebaseLogin(
     User? fbUser, {
     required bool loginProviderIsGoogle,
     UserRole newUserDefaultRole = UserRole.student,
   }) async {
-    if (fbUser == null) {
+    if (fbUser == null)
       throw Exception('Falha ao autenticar. Tente novamente.');
-    }
-
-    // 1) Tentamos obter do Firestore
     var remote = await _repo.getFromFirestore(fbUser.uid);
-
-    // 2) Se não existir no Firestore, criamos um registro com defaults
     if (remote == null) {
       remote = UserModel(
         firebaseUid: fbUser.uid,
@@ -100,21 +87,14 @@ class AuthController extends GetxController {
         email: fbUser.email ?? 'sem-email@local',
         avatarUrl: fbUser.photoURL,
         isGoogleUser: loginProviderIsGoogle,
-        role:
-            newUserDefaultRole, // por padrão aluno; professor/admin você pode ajustar manualmente no Firestore
+        role: newUserDefaultRole,
         classId: null,
       );
       await _repo.upsertFirestore(remote);
     }
-
-    // 3) Consolida (Firestore → Local) e garante persistência bidirecional
     final local = await _repo.syncUser(remote);
-
-    // 4) Salva na sessão
     await _session.save(local);
     current = local;
-
-    // 5) Redireciona pela permissão (se quiser telas distintas por perfil, ajuste aqui)
     Get.offAll(() => const HomeScreen());
   }
 
@@ -153,8 +133,4 @@ class AuthController extends GetxController {
         return 'Erro de autenticação: ${e.message ?? e.code}';
     }
   }
-}
-
-class HomeScreen {
-  const HomeScreen();
 }

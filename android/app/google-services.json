@@ -29,6 +29,13 @@
             {
               "client_id": "168255024061-qgd2b3paesvt7ukqh4r4sm8flp63f8uv.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "168255024061-vhk50vbjp787198pmsie49h0lfo815j2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.cargaliberada"
+              }
             }
           ]
         }

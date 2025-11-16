@@ -87,4 +87,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'cargaliberada-edab3.firebasestorage.app',
     measurementId: 'G-ZCGSZH16N1',
   );
+
 }

@@ -76,7 +76,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 alignment: Alignment.topCenter,
                 clipBehavior: Clip.none,
                 children: [
-                  // 🔹 Caixa branca (Card)
                   Card(
                     elevation: 0,
                     margin: EdgeInsets.symmetric(horizontal: w < 480 ? 8 : 0),
@@ -239,6 +238,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ],
                               ),
                               const SizedBox(height: 18),
+
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    try {
+                                      await _auth.loginGoogle();
+                                    } catch (e) {
+                                      print('Erro no login com Google: $e');
+                                    }
+                                  },
+
+                                  icon: Image.asset(
+                                    'assets/icons/google.png',
+                                    height: 20,
+                                  ),
+                                  label: const Text('Entrar com Google'),
+                                ),
+                              ),
                             ],
                           ),
                         ),

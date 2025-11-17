@@ -5,18 +5,14 @@ import 'package:get/get.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final ProductModel? product;
-  // O construtor continua 'const', o que é bom
-  const ProductFormScreen({super.key, this.product});
 
-  // A linha "final ProductController controller = Get.put(ProductController());"
-  // foi REMOVIDA daqui.
+  const ProductFormScreen({super.key, this.product});
 
   @override
   State<ProductFormScreen> createState() => _ProductFormScreenState();
 }
 
 class _ProductFormScreenState extends State<ProductFormScreen> {
-  // O Get.put() foi MOVIDO para cá, que é o lugar correto.
   final c = Get.put(ProductController());
 
   final nameCtrl = TextEditingController();
@@ -29,8 +25,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.product != null) {
-      final p = widget.product!;
+    final p = widget.product;
+    if (p != null) {
       nameCtrl.text = p.nome;
       descCtrl.text = p.descricao ?? '';
       pesoCtrl.text = p.peso.toString();
@@ -51,71 +47,89 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     super.dispose();
   }
 
+  bool validate() {
+    if (nameCtrl.text.trim().isEmpty) {
+      Get.snackbar('Erro', 'Nome obrigatório.');
+      return false;
+    }
+    if (cnpjCtrl.text.trim().isEmpty) {
+      Get.snackbar('Erro', 'CNPJ obrigatório.');
+      return false;
+    }
+    if (cidadeCtrl.text.trim().isEmpty) {
+      Get.snackbar('Erro', 'Cidade destino obrigatória.');
+      return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.product != null;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEdit ? "Editar Produto" : "Cadastro de Mercadoria"),
+        title: Text(isEdit ? 'Editar Mercadoria' : 'Cadastro de Mercadoria'),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            Positioned(
-              top: -10,
-              child: Image.asset(
-                'lib/img/logocargaliberada.png',
-                height: 250,
-                fit: BoxFit.contain,
-              ),
+            Center(
+              child: Image.asset('lib/img/logocargaliberada.png', height: 180),
             ),
+            const SizedBox(height: 16),
+
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(labelText: "Nome Remetente *"),
+              decoration: const InputDecoration(labelText: 'Nome Remetente *'),
             ),
             const SizedBox(height: 12),
+
             TextField(
               controller: cnpjCtrl,
-              decoration: const InputDecoration(labelText: "CNPJ Remetente *"),
+              decoration: const InputDecoration(labelText: 'CNPJ Remetente *'),
             ),
             const SizedBox(height: 12),
+
             TextField(
               controller: cidadeCtrl,
-              decoration: const InputDecoration(labelText: "Cidade Destino *"),
+              decoration: const InputDecoration(labelText: 'Cidade Destino *'),
             ),
             const SizedBox(height: 12),
+
             TextField(
               controller: pesoCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Peso (Kg) *"),
+              decoration: const InputDecoration(labelText: 'Peso (Kg) *'),
             ),
             const SizedBox(height: 12),
+
             TextField(
               controller: valorCtrl,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                // CORRIGIDO: Adicionado \ antes do $
-                labelText: "Valor NF-e (R\$) *",
+                labelText: 'Valor NF-e (R\$) *',
               ),
             ),
             const SizedBox(height: 12),
+
             TextField(
               controller: descCtrl,
               maxLines: 3,
               decoration: const InputDecoration(
-                labelText: "Descrição (Opcional)",
+                labelText: 'Item a ser transportado',
               ),
             ),
-            const SizedBox(height: 20),
-            Obx(() {
-              return ElevatedButton(
-                // CORRIGIDO: Voltamos a usar "c"
+            const SizedBox(height: 24),
+
+            Obx(
+              () => ElevatedButton(
                 onPressed: c.isLoading.value
                     ? null
                     : () async {
-                        final nome = nameCtrl.text.trim();
+                        if (!validate()) return;
+
                         final peso =
                             double.tryParse(
                               pesoCtrl.text.replaceAll(',', '.'),
@@ -126,9 +140,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                               valorCtrl.text.replaceAll(',', '.'),
                             ) ??
                             0.0;
+
                         if (isEdit) {
                           final updated = widget.product!.copyWith(
-                            nome: nome,
+                            nome: nameCtrl.text.trim(),
                             descricao: descCtrl.text.trim().isEmpty
                                 ? null
                                 : descCtrl.text.trim(),
@@ -136,14 +151,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                             valorNfe: valor,
                             remetenteCnpj: cnpjCtrl.text.trim(),
                             cidadeDestino: cidadeCtrl.text.trim(),
+                            updatedAt: DateTime.now().millisecondsSinceEpoch,
+                            dirty: true,
                           );
-                          // CORRIGIDO: Voltamos a usar "c"
+
                           final ok = await c.updateProduct(updated);
                           if (ok && mounted) Navigator.pop(context, true);
                         } else {
-                          // CORRIGIDO: Voltamos a usar "c"
                           final ok = await c.create(
-                            nome: nome,
+                            nome: nameCtrl.text.trim(),
                             descricao: descCtrl.text.trim().isEmpty
                                 ? null
                                 : descCtrl.text.trim(),
@@ -155,9 +171,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           if (ok && mounted) Navigator.pop(context, true);
                         }
                       },
-                child: Text(isEdit ? "Salvar" : "Cadastrar"),
-              );
-            }),
+                child: c.isLoading.value
+                    ? const CircularProgressIndicator()
+                    : Text(isEdit ? 'Salvar' : 'Cadastrar'),
+              ),
+            ),
           ],
         ),
       ),

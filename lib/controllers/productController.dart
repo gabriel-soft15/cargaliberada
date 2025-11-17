@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cargaliberada/models/productModel.dart';
 import 'package:cargaliberada/repository/productRepository.dart';
 
@@ -17,13 +18,26 @@ class ProductController extends GetxController {
     load();
   }
 
+  // ---------------------------
+  //     LOAD COM FILTRO
+  // ---------------------------
   Future<void> load([String? q]) async {
     try {
       isLoading.value = true;
+
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+
+      if (uid == null) {
+        products.clear();
+        return;
+      }
+
       if (kIsWeb) {
-        products.value = await _repo.getAllFirestore();
+        final list = await _repo.getAllFirestore();
+        products.value = list.where((p) => p.createdBy == uid).toList();
       } else {
-        products.value = await _repo.getAllLocal();
+        final list = await _repo.getAllLocal();
+        products.value = list.where((p) => p.createdBy == uid).toList();
       }
     } catch (e) {
       error.value = 'Erro ao carregar produtos: $e';
@@ -32,6 +46,9 @@ class ProductController extends GetxController {
     }
   }
 
+  // ---------------------------
+  //     CREATE COM createdBy
+  // ---------------------------
   Future<bool> create({
     required String nome,
     String? descricao,
@@ -42,6 +59,9 @@ class ProductController extends GetxController {
   }) async {
     try {
       isLoading.value = true;
+
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
       final fid = DateTime.now().millisecondsSinceEpoch.toString();
       final p = ProductModel(
         id: null,
@@ -52,6 +72,8 @@ class ProductController extends GetxController {
         valorNfe: valorNfe,
         remetenteCnpj: remetenteCnpj,
         cidadeDestino: cidadeDestino,
+
+        createdBy: uid, // 🔥 IMPORTANTE
       );
 
       if (kIsWeb) {
@@ -60,6 +82,7 @@ class ProductController extends GetxController {
         await _repo.insertLocal(p);
         await _repo.upsertFirestore(p);
       }
+
       await load();
       return true;
     } catch (e) {
@@ -70,11 +93,19 @@ class ProductController extends GetxController {
     }
   }
 
+  // ---------------------------
+  //       UPDATE
+  // ---------------------------
   Future<bool> updateProduct(ProductModel p) async {
     try {
       isLoading.value = true;
+
       await _repo.upsertFirestore(p);
-      if (!kIsWeb) await _repo.updateLocal(p);
+
+      if (!kIsWeb && p.id != null) {
+        await _repo.updateLocal(p);
+      }
+
       await load();
       return true;
     } catch (e) {
@@ -85,13 +116,20 @@ class ProductController extends GetxController {
     }
   }
 
+  // ---------------------------
+  //       DELETE
+  // ---------------------------
   Future<bool> remove(int id) async {
     try {
       isLoading.value = true;
+
       final p = products.firstWhereOrNull((e) => e.id == id);
       if (p == null) return false;
+
       await _repo.deleteFromFirestore(p.firestoreId);
+
       if (!kIsWeb) await _repo.deleteLocal(id);
+
       await load();
       return true;
     } catch (e) {
@@ -102,6 +140,9 @@ class ProductController extends GetxController {
     }
   }
 
+  // ---------------------------
+  //     VALIDAÇÃO
+  // ---------------------------
   String? validate({required String name}) {
     if (name.trim().isEmpty) return "Nome obrigatório.";
     return null;

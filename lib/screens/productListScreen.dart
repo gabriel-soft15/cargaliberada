@@ -6,11 +6,12 @@ import 'package:get/get.dart';
 
 class ProductListScreen extends StatelessWidget {
   ProductListScreen({super.key});
-  final c = Get.put(ProductController());
+
+  // Usa o MESMO controller em todo o app
+  final c = Get.find<ProductController>();
 
   @override
   Widget build(BuildContext context) {
-    c.load();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mercadorias'),
@@ -34,31 +35,38 @@ class ProductListScreen extends StatelessWidget {
               onChanged: (v) => c.load(v),
             ),
           ),
+
           Expanded(
             child: Obx(() {
-              if (c.isLoading.value)
+              if (c.isLoading.value) {
                 return const Center(child: CircularProgressIndicator());
-              if (c.error.value != null)
+              }
+              if (c.error.value != null) {
                 return Center(child: Text(c.error.value!));
-              if (c.products.isEmpty)
+              }
+              if (c.products.isEmpty) {
                 return const Center(
-                  child: Text('Nenhuma mercadoria encontrado.'),
+                  child: Text('Nenhuma mercadoria encontrada.'),
                 );
+              }
+
               return ListView.separated(
                 itemCount: c.products.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (_, i) {
                   final ProductModel p = c.products[i];
+
                   return ListTile(
-                    title: Text('${p.nome}'),
+                    title: Text(p.nome),
                     subtitle: Text(
-                      'Destino: ${p.cidadeDestino} • Peso: ${p.peso}kg',
+                      'Destino: ${p.cidadeDestino} • Peso: ${p.peso} kg | NF-e R\$ ${p.valorNfe}',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           icon: const Icon(Icons.edit),
+                          tooltip: 'Editar',
                           onPressed: () async {
                             final updated = await Get.to(
                               () => ProductFormScreen(product: p),
@@ -68,12 +76,13 @@ class ProductListScreen extends StatelessWidget {
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete),
+                          tooltip: 'Excluir',
                           onPressed: () async {
                             if (p.id != null) {
                               await c.remove(p.id!);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Mercadoria excluído.'),
+                                  content: Text('Mercadoria excluída.'),
                                 ),
                               );
                             }
@@ -88,6 +97,7 @@ class ProductListScreen extends StatelessWidget {
           ),
         ],
       ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final created = await Get.to(() => const ProductFormScreen());
